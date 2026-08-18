@@ -62,7 +62,7 @@ export default function Login({ setUser }) {
               value={workerId}
               onChange={(e) => setWorkerId(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:bg-white transition-all text-sm font-medium"
-              placeholder="e.g. SC-10294"
+              placeholder="username@shreecement.com"
               required
             />
           </div>
