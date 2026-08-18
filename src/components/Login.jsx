@@ -56,7 +56,7 @@ export default function Login({ setUser }) {
         {/* Input Form */}
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Worker ID / Employee Code</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Worker ID / Admin ID</label>
             <input 
               type="text" 
               value={workerId}
