@@ -8,30 +8,41 @@ export default function AdminDashboard({ user, setUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch real-time data from your Render backend
-  useEffect(() => {
-    const fetchAttendanceData = async () => {
-      try {
-        // Using the absolute URL to bypass any Vite environment issues
-        const response = await axios.get('https://shree-attendance-backend.onrender.com/api/attendance');
-        
-        // Sort records so the newest attendance logs appear at the top
-        const sortedData = response.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        setRecords(sortedData);
-      } catch (err) {
-        console.error('Failed to fetch records:', err);
-        setError('Could not load attendance data. Please check server connection.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch real-time data from Render backend
+  const fetchAttendanceData = async () => {
+    try {
+      const response = await axios.get('https://shree-attendance-backend.onrender.com/api/attendance');
+      const sortedData = response.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setRecords(sortedData);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch records:', err);
+      setError('Could not load attendance data. Please check server connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAttendanceData();
-    
-    // Optional: Auto-refresh data every 30 seconds
     const interval = setInterval(fetchAttendanceData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Delete specific attendance record and photo
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this attendance record and its selfie proof?");
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`https://shree-attendance-backend.onrender.com/api/attendance/${id}`);
+      // Optimistically remove record from UI state
+      setRecords((prev) => prev.filter((record) => record._id !== id));
+    } catch (err) {
+      console.error('Failed to delete record:', err);
+      alert(err.response?.data?.error || 'Failed to delete record from server.');
+    }
+  };
 
   const handleLogout = () => {
     setUser(null);
@@ -102,24 +113,24 @@ export default function AdminDashboard({ user, setUser }) {
                   <th className="p-4 font-bold">GPS Location</th>
                   <th className="p-4 font-bold">Status</th>
                   <th className="p-4 font-bold">Selfie Proof</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-slate-500 font-semibold animate-pulse">
+                    <td colSpan="6" className="p-8 text-center text-slate-500 font-semibold animate-pulse">
                       Loading latest records...
                     </td>
                   </tr>
                 ) : records.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-slate-500 font-semibold">
+                    <td colSpan="6" className="p-8 text-center text-slate-500 font-semibold">
                       No attendance records found.
                     </td>
                   </tr>
                 ) : (
                   records.map((record) => {
-                    // Convert MongoDB ISO timestamp into readable Date and Time
                     const dateObj = new Date(record.timestamp);
                     const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const dateString = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -150,6 +161,14 @@ export default function AdminDashboard({ user, setUser }) {
                           ) : (
                             <span className="text-slate-400 text-xs">No Photo</span>
                           )}
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={() => handleDelete(record._id)}
+                            className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     );
