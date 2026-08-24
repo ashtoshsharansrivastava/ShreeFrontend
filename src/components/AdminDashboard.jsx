@@ -1,13 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function AdminDashboard({ user, setUser }) {
   const navigate = useNavigate();
-  // Mock data - replace with axios.get('/api/attendance') later
-  const [records, setRecords] = useState([
-    { id: 1, name: 'Worker A', time: '10:30 AM', date: 'Aug 18, 2026', location: 'Lat: 27.84, Lng: 75.26', status: 'Verified' },
-    { id: 2, name: 'Worker B', time: '10:35 AM', date: 'Aug 18, 2026', location: 'Lat: 27.84, Lng: 75.26', status: 'Verified' },
-  ]);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch real-time data from your Render backend
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      try {
+        // Using the absolute URL to bypass any Vite environment issues
+        const response = await axios.get('https://shree-attendance-backend.onrender.com/api/attendance');
+        
+        // Sort records so the newest attendance logs appear at the top
+        const sortedData = response.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setRecords(sortedData);
+      } catch (err) {
+        console.error('Failed to fetch records:', err);
+        setError('Could not load attendance data. Please check server connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+    
+    // Optional: Auto-refresh data every 30 seconds
+    const interval = setInterval(fetchAttendanceData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     setUser(null);
@@ -41,18 +65,22 @@ export default function AdminDashboard({ user, setUser }) {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Workers Logged</h3>
-            <p className="text-3xl font-black text-slate-800">24</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Verification</h3>
-            <p className="text-3xl font-black text-amber-500">3</p>
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Logs Today</h3>
+            <p className="text-3xl font-black text-slate-800">
+              {loading ? '...' : records.length}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">System Status</h3>
-            <p className="text-xl font-bold text-emerald-600 flex items-center gap-2 mt-2">
-              <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span> Online
-            </p>
+            {error ? (
+              <p className="text-xl font-bold text-red-600 flex items-center gap-2 mt-2">
+                <span className="w-3 h-3 bg-red-500 rounded-full"></span> Offline
+              </p>
+            ) : (
+              <p className="text-xl font-bold text-emerald-600 flex items-center gap-2 mt-2">
+                <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span> Online
+              </p>
+            )}
           </div>
         </div>
 
@@ -60,7 +88,7 @@ export default function AdminDashboard({ user, setUser }) {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
             <h2 className="text-base font-bold text-slate-800">Recent Attendance Logs</h2>
-            <button className="text-sm font-semibold text-red-600 hover:text-red-700 transition">
+            <button className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition">
               Download CSV ⬇
             </button>
           </div>
@@ -69,7 +97,7 @@ export default function AdminDashboard({ user, setUser }) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                  <th className="p-4 font-bold">Worker Name</th>
+                  <th className="p-4 font-bold">Worker ID</th>
                   <th className="p-4 font-bold">Date & Time</th>
                   <th className="p-4 font-bold">GPS Location</th>
                   <th className="p-4 font-bold">Status</th>
@@ -77,26 +105,56 @@ export default function AdminDashboard({ user, setUser }) {
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-700">
-                {records.map((record) => (
-                  <tr key={record.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td className="p-4 font-semibold text-slate-900">{record.name}</td>
-                    <td className="p-4">
-                      <div className="font-bold">{record.time}</div>
-                      <div className="text-xs text-slate-500">{record.date}</div>
-                    </td>
-                    <td className="p-4 font-mono text-xs">{record.location}</td>
-                    <td className="p-4">
-                      <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">
-                        {record.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <button className="text-blue-600 hover:text-blue-800 font-semibold text-xs border border-blue-200 px-3 py-1.5 rounded bg-blue-50 transition">
-                        View Photo
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-slate-500 font-semibold animate-pulse">
+                      Loading latest records...
                     </td>
                   </tr>
-                ))}
+                ) : records.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-slate-500 font-semibold">
+                      No attendance records found.
+                    </td>
+                  </tr>
+                ) : (
+                  records.map((record) => {
+                    // Convert MongoDB ISO timestamp into readable Date and Time
+                    const dateObj = new Date(record.timestamp);
+                    const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const dateString = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    return (
+                      <tr key={record._id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td className="p-4 font-semibold text-slate-900">{record.workerId}</td>
+                        <td className="p-4">
+                          <div className="font-bold">{timeString}</div>
+                          <div className="text-xs text-slate-500">{dateString}</div>
+                        </td>
+                        <td className="p-4 font-mono text-xs">{record.location}</td>
+                        <td className="p-4">
+                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">
+                            Verified
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {record.photo ? (
+                            <a 
+                              href={record.photo} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-blue-600 hover:text-blue-800 font-semibold text-xs border border-blue-200 px-3 py-1.5 rounded bg-blue-50 transition cursor-pointer inline-block"
+                            >
+                              View Photo
+                            </a>
+                          ) : (
+                            <span className="text-slate-400 text-xs">No Photo</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

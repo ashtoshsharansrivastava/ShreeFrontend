@@ -2,12 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Attendance from './components/Attendance';
-import AdminDashboard from './components/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard'; // Assuming you are using the robust one from /pages
 import ProtectedRoute from './components/ProtectedRoute';
-import axios from 'axios';
 
-// Sets base URL globally for every axios request in your project
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 function App() {
   // Restore session from localStorage to prevent logouts on page refresh
   const [user, setUser] = useState(() => {

@@ -4,8 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import axios from 'axios';
 
-// Ensure /api is included at the end
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Set the global base URL for ALL axios requests.
+// This points everything directly to Render, ignoring Vercel's relative paths.
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://shree-attendance-backend.onrender.com';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
