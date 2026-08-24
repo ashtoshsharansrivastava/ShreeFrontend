@@ -6,17 +6,15 @@ const AttendanceCapture = () => {
   const [workerId, setWorkerId] = useState('');
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, loading, success, error
+  const [status, setStatus] = useState('idle'); 
   const [message, setMessage] = useState('');
 
-  // 1. Capture Photo from Webcam (Returns Base64 String)
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot();
     setPhoto(imageSrc);
-    fetchLocation(); // Automatically fetch location when photo is taken
+    fetchLocation(); 
   }, [webcamRef]);
 
-  // 2. Fetch GPS Location
   const fetchLocation = () => {
     if (!navigator.geolocation) {
       setLocation('Geolocation not supported by browser');
@@ -25,7 +23,6 @@ const AttendanceCapture = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        // Format: "Lat: 27.845, Lng: 75.267"
         setLocation(`Lat: ${position.coords.latitude.toFixed(5)}, Lng: ${position.coords.longitude.toFixed(5)}`);
       },
       (error) => {
@@ -36,17 +33,15 @@ const AttendanceCapture = () => {
     );
   };
 
-  // 3. Retake Photo
   const retakePhoto = () => {
     setPhoto(null);
     setLocation('');
     setStatus('idle');
   };
 
-  // 4. Submit to Backend
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!workerId || !photo || !location) {
       setMessage('Please provide Worker ID, capture a photo, and allow location access.');
       setStatus('error');
@@ -56,8 +51,8 @@ const AttendanceCapture = () => {
     setStatus('loading');
 
     try {
-      // Send request to the Express backend you configured
-      const response = await fetch('/api/attendance', {
+      // Hardcoded absolute URL targeting Render directly
+      const response = await fetch('https://shree-attendance-backend.onrender.com/api/attendance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,17 +87,12 @@ const AttendanceCapture = () => {
       {status === 'success' ? (
         <div className="text-center">
           <div className="text-green-600 font-semibold mb-4">{message}</div>
-          <button 
-            onClick={retakePhoto}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-          >
+          <button onClick={retakePhoto} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
             Check In Another Worker
           </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Worker ID Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Worker ID</label>
             <input
@@ -115,7 +105,6 @@ const AttendanceCapture = () => {
             />
           </div>
 
-          {/* Camera / Photo Preview Container */}
           <div className="relative rounded-lg overflow-hidden border bg-gray-100 aspect-video flex items-center justify-center">
             {!photo ? (
               <Webcam
@@ -123,47 +112,35 @@ const AttendanceCapture = () => {
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
                 className="w-full h-full object-cover"
-                videoConstraints={{ facingMode: "user" }} // Uses front camera on mobile
+                videoConstraints={{ facingMode: "user" }} 
               />
             ) : (
               <img src={photo} alt="Captured Selfie" className="w-full h-full object-cover" />
             )}
           </div>
 
-          {/* Controls & GPS Status */}
           <div className="flex justify-between items-center text-sm">
             {!photo ? (
-              <button 
-                type="button" 
-                onClick={capture} 
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 w-full"
-              >
+              <button type="button" onClick={capture} className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 w-full">
                 Capture Selfie
               </button>
             ) : (
-              <button 
-                type="button" 
-                onClick={retakePhoto} 
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-              >
+              <button type="button" onClick={retakePhoto} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
                 Retake Photo
               </button>
             )}
           </div>
 
-          {/* Location Display */}
           {location && (
             <div className="text-xs text-gray-500 text-center font-mono bg-gray-50 py-1 rounded">
               GPS: {location}
             </div>
           )}
 
-          {/* Error Message */}
           {status === 'error' && (
             <div className="text-red-500 text-sm text-center font-medium">{message}</div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={!photo || !location || !workerId || status === 'loading'}

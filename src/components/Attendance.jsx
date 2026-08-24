@@ -1,34 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// Add this import at the top of your component file:
-import API from '../services/api'; // Adjust the path to match where your api.js is saved
 
-// Updated handleSubmit function:
-const handleSubmit = async () => {
-  if (!photoBase64) return alert('Please capture a photo first');
-  setUploading(true);
-  
-  try {
-    // Automatically routes to Render in production or localhost in dev
-    await API.post('/attendance', {
-      workerId: user?.workerId || user?.name,
-      photo: photoBase64,
-      location: location ? `${location.lat}, ${location.lng}` : 'Location unavailable',
-      timestamp: new Date().toISOString()
-    });
-
-    alert('Attendance recorded successfully!');
-    setPhotoBase64(null); // Reset preview
-  } catch (error) {
-    console.error('Attendance submit error:', error);
-    // Displays exact error response from backend if present (helps debug 400 Bad Requests)
-    const serverErrorMessage = error.response?.data?.error || 'Failed to submit attendance';
-    alert(serverErrorMessage);
-  } finally {
-    setUploading(false);
-  }
-};
 export default function Attendance({ user, setUser }) {
   const [location, setLocation] = useState(null);
   const [photoBase64, setPhotoBase64] = useState(null);
@@ -65,24 +38,23 @@ export default function Attendance({ user, setUser }) {
       img.onload = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        
+
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
-        
+
         const timestamp = new Date().toLocaleString();
         const geoText = `Lat: ${location.lat.toFixed(5)}, Lng: ${location.lng.toFixed(5)}`;
         const watermarkText = `SHREE CEMENT | ${timestamp} | ${geoText}`;
-        
+
         ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
         ctx.fillRect(0, canvas.height - 90, canvas.width, 90);
-        
+
         ctx.font = `bold ${Math.max(16, Math.floor(canvas.width * 0.035))}px sans-serif`;
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.fillText(watermarkText, canvas.width / 2, canvas.height - 35);
-        
-        // Export as Base64 string directly for JSON backend transport
+
         const base64Data = canvas.toDataURL('image/jpeg', 0.85);
         setPhotoBase64(base64Data);
       };
@@ -91,45 +63,43 @@ export default function Attendance({ user, setUser }) {
     reader.readAsDataURL(file);
   };
 
-  // Updated handleSubmit function:
-const handleSubmit = async () => {
-  if (!photoBase64) return alert('Please capture a photo first');
-  setUploading(true);
-  
-  try {
-    // Automatically routes to Render in production or localhost in dev
-    await API.post('/attendance', {
-      workerId: user?.workerId || user?.name,
-      photo: photoBase64,
-      location: location ? `${location.lat}, ${location.lng}` : 'Location unavailable',
-      timestamp: new Date().toISOString()
-    });
+  // Fixed single handleSubmit using absolute URL
+  const handleSubmit = async () => {
+    if (!photoBase64) return alert('Please capture a photo first');
+    setUploading(true);
 
-    alert('Attendance recorded successfully!');
-    setPhotoBase64(null); // Reset preview
-  } catch (error) {
-    console.error('Attendance submit error:', error);
-    // Displays exact error response from backend if present (helps debug 400 Bad Requests)
-    const serverErrorMessage = error.response?.data?.error || 'Failed to submit attendance';
-    alert(serverErrorMessage);
-  } finally {
-    setUploading(false);
-  }
-};
+    try {
+      // Hardcoded absolute URL targeting Render directly
+      await axios.post('https://shree-attendance-backend.onrender.com/api/attendance', {
+        workerId: user?.workerId || user?.name,
+        photo: photoBase64,
+        location: location ? `${location.lat}, ${location.lng}` : 'Location unavailable',
+        timestamp: new Date().toISOString()
+      });
+
+      alert('Attendance recorded successfully!');
+      setPhotoBase64(null); 
+    } catch (error) {
+      console.error('Attendance submit error:', error);
+      const serverErrorMessage = error.response?.data?.error || 'Failed to submit attendance';
+      alert(serverErrorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full bg-slate-900 flex items-center justify-center p-4 overflow-hidden select-none">
-      
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06]">
         <img src="/shreelogo.png" alt="Shree Cement Watermark" className="w-72 sm:w-96 max-w-full h-auto object-contain" />
       </div>
 
       <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
-        
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <img src="/shreelogo.png" alt="Shree Cement Logo" className="h-9 w-auto object-contain" />
             <div>
-              <h2 className="text-sm font-bold text-slate-800 leading-tight">{user.name}</h2>
+              <h2 className="text-sm font-bold text-slate-800 leading-tight">{user?.name}</h2>
               {!location ? (
                 <p className="text-red-500 text-[11px] font-semibold animate-pulse mt-0.5">Acquiring GPS...</p>
               ) : (
@@ -161,8 +131,8 @@ const handleSubmit = async () => {
           </div>
         )}
 
-        <button 
-          onClick={handleSubmit} 
+        <button
+          onClick={handleSubmit}
           disabled={uploading || !photoBase64}
           className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20 text-sm tracking-wide"
         >
