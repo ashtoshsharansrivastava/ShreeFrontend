@@ -45,15 +45,38 @@ export default function Attendance({ user, setUser }) {
 
         const timestamp = new Date().toLocaleString();
         const geoText = `Lat: ${location.lat.toFixed(5)}, Lng: ${location.lng.toFixed(5)}`;
-        const watermarkText = `SHREE CEMENT | ${timestamp} | ${geoText}`;
+        const workerInfo = `ID: ${user?.workerId || user?.name || 'VERIFIED'}`;
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-        ctx.fillRect(0, canvas.height - 90, canvas.width, 90);
+        // Calculate dynamic dimensions to shift the watermark upward
+        const fontSize = Math.max(16, Math.floor(canvas.width * 0.038));
+        const boxHeight = fontSize * 3.8;
+        
+        // Lift the box position off the bottom border by 12% of image height
+        const bottomOffset = Math.max(120, Math.floor(canvas.height * 0.12)); 
+        const boxY = canvas.height - boxHeight - bottomOffset;
+        const boxMarginX = Math.floor(canvas.width * 0.05);
+        const boxWidth = canvas.width - (boxMarginX * 2);
 
-        ctx.font = `bold ${Math.max(16, Math.floor(canvas.width * 0.035))}px sans-serif`;
+        // Draw semi-transparent dark background badge with rounded corners
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(boxMarginX, boxY, boxWidth, boxHeight, 12);
+          ctx.fill();
+        } else {
+          ctx.fillRect(boxMarginX, boxY, boxWidth, boxHeight);
+        }
+
+        // Render multi-line centered text inside the lifted badge
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(watermarkText, canvas.width / 2, canvas.height - 35);
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.fillText(`SHREE CEMENT | ${workerInfo}`, canvas.width / 2, boxY + fontSize + 8);
+
+        ctx.font = `${Math.floor(fontSize * 0.85)}px monospace`;
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText(`Time: ${timestamp}`, canvas.width / 2, boxY + (fontSize * 2) + 10);
+        ctx.fillText(`GPS: ${geoText}`, canvas.width / 2, boxY + (fontSize * 3) + 10);
 
         const base64Data = canvas.toDataURL('image/jpeg', 0.85);
         setPhotoBase64(base64Data);
@@ -63,13 +86,11 @@ export default function Attendance({ user, setUser }) {
     reader.readAsDataURL(file);
   };
 
-  // Fixed single handleSubmit using absolute URL
   const handleSubmit = async () => {
     if (!photoBase64) return alert('Please capture a photo first');
     setUploading(true);
 
     try {
-      // Hardcoded absolute URL targeting Render directly
       await axios.post('https://shree-attendance-backend.onrender.com/api/attendance', {
         workerId: user?.workerId || user?.name,
         photo: photoBase64,
