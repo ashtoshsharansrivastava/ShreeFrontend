@@ -5,6 +5,7 @@ import axios from 'axios';
 export default function Attendance({ user, setUser }) {
   const [location, setLocation] = useState(null);
   const [photoBase64, setPhotoBase64] = useState(null);
+  const [message, setMessage] = useState(''); // <-- Added message state
   const [uploading, setUploading] = useState(false);
   const canvasRef = useRef(null);
   const navigate = useNavigate();
@@ -95,11 +96,13 @@ export default function Attendance({ user, setUser }) {
         workerId: user?.workerId || user?.name,
         photo: photoBase64,
         location: location ? `${location.lat}, ${location.lng}` : 'Location unavailable',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        message: message // <-- Passing the message to the backend
       });
 
       alert('Attendance recorded successfully!');
       setPhotoBase64(null); 
+      setMessage(''); // <-- Clear message field after success
     } catch (error) {
       console.error('Attendance submit error:', error);
       const serverErrorMessage = error.response?.data?.error || 'Failed to submit attendance';
@@ -151,6 +154,24 @@ export default function Attendance({ user, setUser }) {
             <img src={photoBase64} alt="Attendance Preview" className="w-full h-auto object-cover max-h-72" />
           </div>
         )}
+        {/* Zone Selection Dropdown */}
+        <div className="mb-5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+            Work Zone / Area
+          </label>
+          <select
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-sm font-medium cursor-pointer"
+          >
+            <option value="">-- Select your current zone --</option>
+            <option value="Raw Mill">Raw Mill</option>
+            <option value="Stacker-Reclaimer">Stacker - Reclaimer</option>
+            <option value="Crusher Primary">Crusher Primary</option>
+            <option value="Crusher Secondary">Crusher Secondary</option>
+            <option value="OT">Control Room</option>
+          </select>
+        </div>
 
         <button
           onClick={handleSubmit}
